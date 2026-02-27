@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - PresentaMind</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* Dashboard Specific Styles */
+    .dashboard-body {
+      background: linear-gradient(135deg, #0a0f1e 0%, #1a1f35 100%);
+      min-height: 100vh;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .dashboard-nav {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .nav-logo span {
+      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .user-name { font-weight: 500; }
+
+    .nav-logout {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .nav-logout:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .dashboard-main {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    .welcome-section { margin-bottom: 2rem; }
+
+    .welcome-section h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .welcome-section p { color: #94a3b8; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 1.5rem;
+    }
+
+    .stat-card h3 {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .progress-chart-container {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-header h2 { font-size: 1.3rem; }
+
+    .chart-container { height: 300px; position: relative; }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 2rem;
+    }
+
+    .analyzer-section,
+    .history-section {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      padding: 2rem;
+    }
+
+    .history-section h2 {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .history-list { max-height: 500px; overflow-y: auto; }
+
+    .history-item {
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateX(5px);
+    }
+
+    .history-date {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .history-scores { display: flex; gap: 1rem; font-size: 0.9rem; }
+
+    .history-score { display: flex; align-items: center; gap: 0.3rem; }
+    .history-score.confidence { color: #4ade80; }
+    .history-score.nervousness { color: #f87171; }
+    .history-score.clarity { color: #60a5fa; }
+
+    .improvement-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.2);
+      border-radius: 20px;
+      color: #4ade80;
+      font-size: 0.85rem;
+      margin-left: 0.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .main-content { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .nav-content { flex-direction: column; gap: 1rem; }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+    /* Add this to your existing CSS */
+.recommendations-section {
+  grid-column: 1 / -1;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+}
+
+.recommendations-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.recommendation-category {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.recommendation-category:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-icon {
+  font-size: 1.5rem;
+}
+
+.category-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.recommendation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.recommendation-item:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+  transform: translateX(5px);
+}
+
+.rec-number {
+  width: 24px;
+  height: 24px;
+  background: rgba(139, 92, 246, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
+.rec-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.rec-title {
+  display: block;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+  color: #e2e8f0;
+}
+
+.rec-description {
+  display: block;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-link {
+  color: #8b5cf6;
+  font-size: 1.2rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.recommendation-item:hover .rec-link {
+  opacity: 1;
+}
+
+.quick-tips {
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.quick-tips h4 {
+  font-size: 1rem;
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tips-carousel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tip-chip {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.tip-chip:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .recommendation-item {
+    flex-wrap: wrap;
+  }
+  
+  .rec-description {
+    white-space: normal;
+  }
+}
+
+.recommendation-category {
+  margin-right: 80px; /* Adjust this value as needed */
+}
+  </style>
+</head>
+
+<body class="dashboard-body">
+  <nav class="dashboard-nav">
+    <div class="nav-content">
+      <div class="nav-logo">
+        <span></span>
+        <span>PresentaMind</span>
+      </div>
+      <div class="nav-user">
+        <div class="user-info">
+          <div class="user-avatar">{{ user.username[0]|upper }}</div>
+          <span class="user-name">{{ user.username }}</span>
+        </div>
+        <a href="{{ url_for('logout') }}" class="nav-logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="dashboard-main">
+    <div class="welcome-section">
+      <h1>Welcome back, {{ user.username }}!</h1>
+      <p>Ready to improve your public speaking today?</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Analyses</h3>
+        <div class="stat-value" id="stat-total">{{ stats.total_analyses }}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Improvement Score</h3>
+        <div class="stat-value">{{ stats.improvement_score|round|int }}%</div>
+      </div>
+      <div class="stat-card">
+        <h3>Avg Confidence</h3>
+        <div class="stat-value">{{ stats.average_confidence|round|int }}%</div>
+      </div>
+      <div class="stat-card">
+        <h3>Best Score</h3>
+        <div class="stat-value">{{ stats.best_confidence|round|int }}%</div>
+      </div>
+    </div>
+
+    <div class="progress-chart-container">
+      <div class="chart-header">
+        <h2>Your Progress Over Time</h2>
+        {% if history|length > 1 %}
+          <span class="improvement-badge">+{{ stats.improvement_score|round|int }}% improvement</span>
+        {% endif %}
+      </div>
+      <div class="chart-container">
+        {% if history|length > 1 %}
+          <canvas id="progressChart"></canvas>
+        {% else %}
+          <div style="text-align: center; padding: 3rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+            <h3 style="color: #e2e8f0; margin-bottom: 0.5rem;">No Data Yet</h3>
+            <p style="color: #94a3b8;">Complete at least 2 analyses to see your progress over time!</p>
+            <button onclick="document.getElementById('script').scrollIntoView({ behavior: 'smooth' })"
+                    class="btn-primary" style="margin-top: 1.5rem;">
+              <span class="btn-icon">🎯</span>
+              Start Your First Analysis
+            </button>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="analyzer-section">
+        <div class="input-section glass-effect">
+          <div class="script-label">
+            <span class="label-dot"></span>
+            <span>Your Presentation Script</span>
+          </div>
+
+          <div class="textarea-container">
+            <textarea id="script" placeholder="Paste your presentation script here... (Ctrl+Enter to analyze)" rows="8">
+Good morning everyone. Um, I think I'm going to talk about, like, our project. Sorry if I'm nervous, but basically we've been working on this for, you know, a while.
+            </textarea>
+          </div>
+
+          <!-- Voice Recording Section -->
+          <div class="voice-section">
+            <h3 class="voice-title">
+              <span class="voice-icon">🎤</span>
+              Voice Recording
+            </h3>
+            <p class="voice-description">Record your speech for voice analysis and transcription</p>
+
+            <div class="voice-controls">
+              <button id="record-btn" class="record-btn" type="button">
+                <span class="btn-icon"></span>
+                Start Recording
+              </button>
+              <span id="voice-status" class="voice-status">
+                <span class="status-dot"></span>
+                Ready to record
+              </span>
+            </div>
+
+            <div id="transcription-status" class="transcription-status"></div>
+
+            <div id="voice-metrics" class="voice-metrics hidden">
+              <h4>Voice Analysis</h4>
+              <div class="voice-nervousness">
+                <span>Voice Nervousness:</span>
+                <span id="voice-nervousness-value" class="score-value-small">0</span>
+                <div class="progress-bar-container">
+                  <div id="voice-nervousness-progress" class="progress-bar nervousness" style="width: 0%"></div>
+                </div>
+              </div>
+              <div id="voice-metrics-details"></div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="provider-info">
+              <span class="provider-badge">
+        
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+              <button id="analyze-btn" class="btn-primary" type="button">
+                <span class="btn-icon"></span>
+                Analyze Script
+              </button>
+
+              <button class="btn-secondary" type="button" onclick="document.getElementById('script').value = ''">
+                <span class="btn-icon"></span>
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning Banner -->
+        <div id="api-warning" class="warning-banner hidden">
+          <span class="warning-icon">⚠️</span>
+          <span id="warning-message"></span>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="results-section hidden">
+          <div class="scores-header">
+            <h2>Analysis Results</h2>
+            <span id="timestamp" class="score-timestamp"></span>
+          </div>
+
+          <div class="scores-grid">
+            <div class="score-card glass-card">
+              <div class="score-icon">😰</div>
+              <h3>Nervousness</h3>
+              <div class="progress-bar-container">
+                <div id="nervousness-progress" class="progress-bar nervousness" style="width: 0%"></div>
+              </div>
+              <span id="nervousness-value" class="score-value">0</span>
+            </div>
+
+            <div class="score-card glass-card">
+              <div class="score-icon">💪</div>
+              <h3>Confidence</h3>
+              <div class="progress-bar-container">
+                <div id="confidence-progress" class="progress-bar confidence" style="width: 0%"></div>
+              </div>
+              <span id="confidence-value" class="score-value">0</span>
+            </div>
+
+            <div class="score-card glass-card">
+              <div class="score-icon">🎯</div>
+              <h3>Clarity</h3>
+              <div class="progress-bar-container">
+                <div id="clarity-progress" class="progress-bar clarity" style="width: 0%"></div>
+              </div>
+              <span id="clarity-value" class="score-value">0</span>
+            </div>
+          </div>
+
+          <div class="issues-section glass-card">
+            <h2>⚠️ Detected Issues</h2>
+            <ul id="issues-list" class="issues-list"></ul>
+          </div>
+
+          <div class="improved-script-section glass-card">
+            <h2>✨ Improved Version</h2>
+            <div class="script-container">
+              <pre id="improved-script" class="improved-script"></pre>
+              <button id="copy-script" class="btn-secondary" type="button">
+                <span class="btn-icon"></span>
+                Copy Script
+              </button>
+            </div>
+          </div>
+
+          <div class="tips-section glass-card">
+            <h2>💡 Speaking Tips</h2>
+            <ul id="tips-list" class="tips-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="history-section">
+        <h2>Analysis History</h2>
+        <div id="history-list" class="history-list">
+          {% if history %}
+            {% for item in history|reverse %}
+              <div class="history-item" data-analysis-id="{{ item.id }}">
+                <div class="history-date">{{ item.timestamp[:10] }} at {{ item.timestamp[11:16] }}</div>
+                <div class="history-scores">
+                  <span class="history-score confidence">💪 {{ item.scores.confidence|round|int }}%</span>
+                  <span class="history-score nervousness">😰 {{ item.scores.nervousness|round|int }}%</span>
+                  <span class="history-score clarity">🎯 {{ item.scores.clarity|round|int }}%</span>
+                </div>
+              </div>
+              
+            {% endfor %}
+          {% else %}
+            <p style="color: #64748b; text-align: center; padding: 2rem;">
+              No analyses yet. Start by analyzing your first script!
+            </p>
+          {% endif %}
+        </div>
+
+        <div class="recommendations-section">
+  <h2>Personalized Recommendations</h2>
+  
+  <div class="recommendations-grid">
+    <!-- Reading Practice Websites -->
+    <div class="recommendation-category">
+      <div class="category-header">
+        <span class="category-icon">📚</span>
+        <h3>Reading Practice</h3>
+      </div>
+      <div class="recommendation-list">
+        <a href="https://www.reading.ac.uk/" target="_blank" class="recommendation-item">
+          <span class="rec-number">1</span>
+          <div class="rec-content">
+            <span class="rec-title">University of Reading</span>
+            <span class="rec-description">Academic reading resources and exercises</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+        
+        <a href="https://www.commonlit.org/" target="_blank" class="recommendation-item">
+          <span class="rec-number">2</span>
+          <div class="rec-content">
+            <span class="rec-title">CommonLit</span>
+            <span class="rec-description">Free reading passages and literacy resources</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+        
+        <a href="https://readtheory.org/" target="_blank" class="recommendation-item">
+          <span class="rec-number">3</span>
+          <div class="rec-content">
+            <span class="rec-title">ReadTheory</span>
+            <span class="rec-description">Personalized reading comprehension exercises</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+        
+        <a href="https://www.newsinlevels.com/" target="_blank" class="recommendation-item">
+          <span class="rec-number">4</span>
+          <div class="rec-content">
+            <span class="rec-title">News in Levels</span>
+            <span class="rec-description">World news for English learners</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+      </div>
+    </div>
+    
+    <!-- YouTube Tutorials -->
+    <div class="recommendation-category">
+      <div class="category-header">
+        <span class="category-icon">▶️</span>
+        <h3>Speech & Presentation Skills</h3>
+      </div>
+      <div class="recommendation-list">
+        <a href="https://www.youtube.com/user/TEDtalksDirector" target="_blank" class="recommendation-item">
+          <span class="rec-number">1</span>
+          <div class="rec-content">
+            <span class="rec-title">TED Talks</span>
+            <span class="rec-description">Learn from the world's best speakers</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+        
+        <a href="https://www.youtube.com/c/CharismaOnCommand" target="_blank" class="recommendation-item">
+          <span class="rec-number">2</span>
+          <div class="rec-content">
+            <span class="rec-title">Charisma on Command</span>
+            <span class="rec-description">Body language and confidence tips</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+        
+        <a href="https://www.youtube.com/user/CommunicationCoach" target="_blank" class="recommendation-item">
+          <span class="rec-number">3</span>
+          <div class="rec-content">
+            <span class="rec-title">Communication Coach</span>
+            <span class="rec-description">Professional speaking techniques</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+        
+        <a href="https://www.youtube.com/c/VinhGiangle" target="_blank" class="recommendation-item">
+          <span class="rec-number">4</span>
+          <div class="rec-content">
+            <span class="rec-title">Vinh Giang</span>
+            <span class="rec-description">Stage presence and vocal skills</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Practice Exercises -->
+    <div class="recommendation-category">
+      <div class="category-header">
+        <span class="category-icon">🎯</span>
+        <h3>Interactive Practice</h3>
+      </div>
+      <div class="recommendation-list">
+        <a href="https://www.duolingo.com/" target="_blank" class="recommendation-item">
+          <span class="rec-number">1</span>
+          <div class="rec-content">
+            <span class="rec-title">Duolingo</span>
+            <span class="rec-description">Language and pronunciation practice</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+        
+        <a href="https://www.bbc.co.uk/learningenglish/" target="_blank" class="recommendation-item">
+          <span class="rec-number">2</span>
+          <div class="rec-content">
+            <span class="rec-title">BBC Learning English</span>
+            <span class="rec-description">Free pronunciation and speaking lessons</span>
+          </div>
+          <span class="rec-link">→</span>
+        </a>
+       
+      </div>
+    </div>
+  </div>
+  
+  
+      </div>
+      <!-- Add this after the history-section div and before closing main-content div -->
+    </div>
+  </main>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <div class="loading-text">Analyzing your script...</div>
+    <div class="loading-subtext">Our AI is working its magic</div>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  
+</body>
+</html> 
